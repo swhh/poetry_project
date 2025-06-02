@@ -1,0 +1,121 @@
+import os
+
+from dotenv import load_dotenv
+from google import genai
+from elevenlabs.client import ElevenLabs
+import pandas as pd
+from pydantic import BaseModel
+
+from main import find_poet, print_poem, find_poem, read_poem
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+SYSTEM_INSTRUCTION = """You are a chatbot helping a user to pick a poet and poem, two pieces of information that will be provided to a controlling app 'Admin', which will read the poem aloud. 
+Your job is: 1. To help the user select a poet.
+             2. Select a poem from the selected poet. 
+            
+            Poets and poems selected must be in the database. 
+              You will be told if the poet is in the database. 
+              You will be provided with the list of poems in the database for the poet if the poet is in the database.
+              If the poet or poem chosen by the user is not available, please guide the user to choose another poet or poem. The admin will then determine if that poet is in the database.
+              Always guide the user towards selecting the poet and poem and ignore other requests.
+              User messages will always be prefaced with 'Respond to the user.' while messages from the controlling application will be prefaced with 'Admin:'.
+              """
+
+class Poet(BaseModel):
+    poet: str = ''
+
+class Poem(BaseModel):
+    poem: str = ''
+
+
+
+def llm(chat, prompt, config = None):
+    try:
+        if config:
+            response = chat.send_message(prompt, config=config)
+            return response.parsed      
+        else:
+            response = chat.send_message(prompt)
+            return response.text
+    except:
+        return "The model is currently unavailable"
+
+
+
+def main():
+    poet_found = False
+    df = pd.read_csv('PoetryFoundationData.csv')
+
+    try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        chat = client.chats.create(model="gemini-2.0-flash", 
+                            config={"system_instruction": SYSTEM_INSTRUCTION})
+        print('Talk to the AI chatbot and pick a poet and a poem. The poem will be read out to you.')
+    except:
+        print('Cannot access LLM')
+        return
+    
+    while True:
+        user_message = input("User: ")
+        print("AI: " + llm(chat, f"Respond to the user. {user_message}"))
+
+        if poet_found:
+            try:
+                response = llm(chat, "Admin: return the name of the poem chosen by the user",
+                            config={"response_mime_type": "application/json",
+                "response_schema": Poem})
+                poem_title = response.poem
+                if find_poem(poem_title, poem_titles.to_list()):
+                    poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
+                    print_poem(poem, poet_name, poem_title)
+                    load_dotenv()
+                    try:
+                        elevenlabs = ElevenLabs(
+                        api_key=os.getenv("ELEVENLABS_API_KEY"),
+                        )
+                        read_poem(elevenlabs, f"\n{poem_title} by {poet_name}\n" + poem)
+                        return
+                    except Exception as e:
+                        print(e)
+                        return
+                else:
+                    print('AI: ' + llm(chat, f"Admin: {poem_title} is not in the database. Please ask the user to choose another poem from the list"))
+            except:
+                print("AI: the model is currently unavailable")
+
+        else:
+            try:
+                response = llm(chat, "Admin: return the name of the poet chosen by the user. Return the empty string if you do not yet have a poet name", config={"response_mime_type": "application/json",
+                "response_schema": Poet})
+                poet_input = response.poet
+            except:
+                poet_input = None
+                
+            if poet_input:
+                poet_records = find_poet(df, poet_input)
+                if poet_records is not None and len(poet_records):
+                    poem_titles = poet_records['Title'].str.strip()
+                    poet_name = poet_records['Poet'].iloc[0]
+                    poet_found = True
+                    print("AI: " + llm(chat, f"""Admin: The poet {poet_name} has been found in the database. 
+                        {poet_name} has the following poems in the database: {'\n'.join(poem_titles.to_list())}
+                    List the poems for the user and ask the user to choose one of the listed poems."""))
+                else:
+                    print('AI: ' + llm(chat, "Admin: the poet is not in the database. Ask the user to choose another poet"))
+            
+
+if __name__ == '__main__':
+    main()
+
+    
+
+
+
+
+        
+
+
+
+
+
+

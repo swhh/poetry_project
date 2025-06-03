@@ -1,8 +1,6 @@
 import os
 
-from dotenv import load_dotenv
 from google import genai
-from elevenlabs.client import ElevenLabs
 import pandas as pd
 from pydantic import BaseModel
 
@@ -21,13 +19,9 @@ Your job is: 1. To help the user select a poet.
               User messages will always be prefaced with 'Respond to the user.' while messages from the controlling application will be prefaced with 'Admin:'.
               """
 
-class Poet(BaseModel):
-    poet: str = ''
-
-class Poem(BaseModel):
-    poem: str = ''
-
-
+class State(BaseModel):
+    poet_name: str = ''
+    poem_name: str = ''
 
 def llm(chat, prompt, config = None):
     try:
@@ -37,14 +31,15 @@ def llm(chat, prompt, config = None):
         else:
             response = chat.send_message(prompt)
             return response.text
-    except:
-        return "The model is currently unavailable"
+    except Exception as e:
+        return f"The model is currently unavailable. Exception occurred with details: {e}"
 
 
 
 def main():
-    poet_found = False
+    state = State()
     df = pd.read_csv('PoetryFoundationData.csv')
+    poet_in_db = False
 
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
@@ -56,56 +51,53 @@ def main():
         return
     
     while True:
-        user_message = input("User: ")
+        user_message = input("User: ")   
         print("AI: " + llm(chat, f"Respond to the user. {user_message}"))
-
-        if poet_found:
-            try:
-                response = llm(chat, "Admin: return the name of the poem chosen by the user",
-                            config={"response_mime_type": "application/json",
-                "response_schema": Poem})
-                poem_title = response.poem
-                if find_poem(poem_title, poem_titles.to_list()):
-                    poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
-                    print_poem(poem, poet_name, poem_title)
-                    load_dotenv()
-                    try:
-                        elevenlabs = ElevenLabs(
-                        api_key=os.getenv("ELEVENLABS_API_KEY"),
-                        )
-                        read_poem(elevenlabs, f"\n{poem_title} by {poet_name}\n" + poem)
-                        return
-                    except Exception as e:
-                        print(e)
-                        return
-                else:
-                    print('AI: ' + llm(chat, f"Admin: {poem_title} is not in the database. Please ask the user to choose another poem from the list"))
-            except:
-                print("AI: the model is currently unavailable")
-
-        else:
-            try:
-                response = llm(chat, "Admin: return the name of the poet chosen by the user. Return the empty string if you do not yet have a poet name", config={"response_mime_type": "application/json",
-                "response_schema": Poet})
-                poet_input = response.poet
-            except:
-                poet_input = None
-                
-            if poet_input:
-                poet_records = find_poet(df, poet_input)
+        new_state = llm(chat, prompt=f"""Admin: Current state: {state}. 
+                        Return the updated state based on the conversation history. 
+                        Poet_name should be the name of a specific poet. 
+                        And poem_name should be the name of a specific poem by that poet.
+                        If the message contains no new information, return the existing state"""
+                     ,config={"response_mime_type": "application/json",
+                    "response_schema": State})
+        if isinstance(new_state, str):  # if error returned
+            continue
+        elif isinstance(new_state, State): # if there is new state
+            if new_state != state: # if new state contains new info, update the state
+                state = new_state
+        print("state: " + str(state))
+             
+        if state.poet_name: # if user has selected poet
+            if not poet_in_db: # if hasn't been checked if poet in db
+                poet_records = find_poet(df, state.poet_name)
                 if poet_records is not None and len(poet_records):
                     poem_titles = poet_records['Title'].str.strip()
                     poet_name = poet_records['Poet'].iloc[0]
-                    poet_found = True
+                    poet_in_db = True
+                    state.poet_name = poet_name
+
+            if poet_in_db and state.poet_name: # poet in db and the user has chosen a poem
+                poem_title = find_poem(state.poet_name, poem_titles.to_list())
+                if poem_title: # if poem is in db
+                    poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
+                    print(f"""AI: {poem_title} from {state.poet_name} is available and will be read out now""")
+                    print_poem(poem, poet_name, poem_title)
+                    #read_poem(f"\n{poem_title} by {poet_name}\n" + poem)
+                    break
+                else: # if poet is not in db
+                    print("AI: " + llm(chat, f"""Admin: The poet {state.poet_name} is in the database. But the poem {state.poet_name} is not. Ask the user to choose another poem from the poet {state.poet_name}"""))
+            elif poet_in_db and not state.poet_name: # poet in db but user has not chosen poem
                     print("AI: " + llm(chat, f"""Admin: The poet {poet_name} has been found in the database. 
-                        {poet_name} has the following poems in the database: {'\n'.join(poem_titles.to_list())}
-                    List the poems for the user and ask the user to choose one of the listed poems."""))
-                else:
-                    print('AI: ' + llm(chat, "Admin: the poet is not in the database. Ask the user to choose another poet"))
-            
+                            {poet_name} has the following poems in the database: {'\n'.join(poem_titles.to_list())}
+                             List the poems for the user and ask the user to choose one of the listed poems."""))
+            else: # chosen poet is not in db
+                print('AI: ' + llm(chat, f"Admin: the poet {state.poet_name} is not in the database. Ask the user to choose another poet"))
+    print("----- Conversation over ------")   
 
 if __name__ == '__main__':
     main()
+
+
 
     
 

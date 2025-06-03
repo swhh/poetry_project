@@ -81,27 +81,29 @@ def print_poem(poem, poet_name, poem_title):
 
 
 
-def read_poem(elevenlabs, poem):
-    audio = elevenlabs.text_to_speech.convert(
-        text=poem,
-        voice_id="JBFqnCBsd6RMkjVDRZzb",
-        model_id="eleven_multilingual_v2",
-        output_format="mp3_44100_128",
-    )
-    play(audio)
-
-
-def main():
-    df = pd.read_csv('PoetryFoundationData.csv')
+def read_poem(poem):
     load_dotenv()
     try:
         elevenlabs = ElevenLabs(
         api_key=os.getenv("ELEVENLABS_API_KEY"),
         )
+        audio = elevenlabs.text_to_speech.convert(
+        text=poem,
+        voice_id="JBFqnCBsd6RMkjVDRZzb",
+        model_id="eleven_multilingual_v2",
+        output_format="mp3_44100_128",
+    )
+        play(audio)
+        
     except Exception as e:
         print(e)
+        print('Cannot read poem right now')
         return
-        
+
+
+
+def main():
+    df = pd.read_csv('PoetryFoundationData.csv')
 
     while True:
         poet_input = input('Name a poet: ')
@@ -115,11 +117,7 @@ def main():
                 if poem_title in poem_titles.str.strip().values:
                     poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
                     print_poem(poem, poet_name, poem_title)  
-                    try:
-                        read_poem(elevenlabs, f"\n{poem_title} by {poet_input}\n" + poem)
-                    except Exception as e:
-                        print('Cannot read poem right now')
-                        print(e)
+                    read_poem(f"\n{poem_title} by {poet_input}\n" + poem)
                     break
                 poem_title = input(f'{poem_title} was not found. Please choose another title: ')
             break

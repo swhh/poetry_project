@@ -60,7 +60,7 @@ def main():
                         If the message contains no new information, return the existing state"""
                      ,config={"response_mime_type": "application/json",
                     "response_schema": State})
-        if isinstance(new_state, str):  # if error returned
+        if isinstance(new_state, str):  # if error returned  NB this leads to issues
             continue
         elif isinstance(new_state, State): # if there is new state
             if new_state != state: # if new state contains new info, update the state
@@ -77,14 +77,14 @@ def main():
                     state.poet_name = poet_name
 
             if poet_in_db and state.poet_name: # poet in db and the user has chosen a poem
-                poem_title = find_poem(state.poet_name, poem_titles.to_list())
+                poem_title = find_poem(state.poem_name, poem_titles.to_list())
                 if poem_title: # if poem is in db
                     poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
                     print(f"""AI: {poem_title} from {state.poet_name} is available and will be read out now""")
                     print_poem(poem, poet_name, poem_title)
                     #read_poem(f"\n{poem_title} by {poet_name}\n" + poem)
                     break
-                else: # if poet is not in db
+                else: # if poem is not in db
                     print("AI: " + llm(chat, f"""Admin: The poet {state.poet_name} is in the database. But the poem {state.poet_name} is not. Ask the user to choose another poem from the poet {state.poet_name}"""))
             elif poet_in_db and not state.poet_name: # poet in db but user has not chosen poem
                     print("AI: " + llm(chat, f"""Admin: The poet {poet_name} has been found in the database. 

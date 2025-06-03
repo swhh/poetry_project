@@ -42,7 +42,7 @@ def find_poet(df, poet_name, threshold=90):
     return df[df['Poet'] == matched_name]
 
 
-def find_poem(poem, poems, threshold=60):
+def find_poem(poem, poems, threshold=80):
     """Find closest fuzzy match for poem in poems"""
     match = process.extractOne(
             poem,

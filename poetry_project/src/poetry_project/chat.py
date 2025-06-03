@@ -31,9 +31,8 @@ def llm(chat, prompt, config = None):
         else:
             response = chat.send_message(prompt)
             return response.text
-    except Exception as e:
-        return f"The model is currently unavailable. Exception occurred with details: {e}"
-
+    except:
+        return f"The model is currently unavailable."
 
 
 def main():
@@ -61,11 +60,11 @@ def main():
                      ,config={"response_mime_type": "application/json",
                     "response_schema": State})
         if isinstance(new_state, str):  # if error returned  NB this leads to issues
+            print(f"AI: {new_state}")
             continue
         elif isinstance(new_state, State): # if there is new state
             if new_state != state: # if new state contains new info, update the state
                 state = new_state
-        print("state: " + str(state))
              
         if state.poet_name: # if user has selected poet
             if not poet_in_db: # if hasn't been checked if poet in db
@@ -80,9 +79,8 @@ def main():
                 poem_title = find_poem(state.poem_name, poem_titles.to_list())
                 if poem_title: # if poem is in db
                     poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
-                    print(f"""AI: {poem_title} from {state.poet_name} is available and will be read out now""")
                     print_poem(poem, poet_name, poem_title)
-                    #read_poem(f"\n{poem_title} by {poet_name}\n" + poem)
+                    read_poem(f"\n{poem_title} by {poet_name}\n" + poem)
                     break
                 else: # if poem is not in db
                     print("AI: " + llm(chat, f"""Admin: The poet {state.poet_name} is in the database. But the poem {state.poet_name} is not. Ask the user to choose another poem from the poet {state.poet_name}"""))

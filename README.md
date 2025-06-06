@@ -1,6 +1,6 @@
 # Poetry Project
 
-A Python application that allows users to search and read poems from the Poetry Foundation dataset. The application uses fuzzy matching to find poems and poets, and can read poems aloud using ElevenLabs text-to-speech.
+A Python application that allows users to search and read poems from the Poetry Foundation dataset. The application uses fuzzy matching to find poems and poets, and can read poems aloud using ElevenLabs text-to-speech. It can also allow the user to chat with an LLM through the command line to help select a poem. 
 
 ## Features
 
@@ -48,6 +48,7 @@ poetry run python src/poetry_project/chat.py
 - Python 3.x
 - Poetry for dependency management
 - ElevenLabs API key for text-to-speech functionality
+- Gemini API key for chat interface
 
 ## Data
 

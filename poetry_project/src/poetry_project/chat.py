@@ -55,8 +55,7 @@ def main():
         new_state = llm(chat, prompt=f"""Admin: Current state: {state}. 
                         Return the updated state based on the conversation history. 
                         Poet_name should be the name of a specific poet. 
-                        And poem_name should be the name of a specific poem by that poet.
-                        If the message contains no new information, return the existing state"""
+                        And poem_name should be the name of a specific poem by that poet"""
                      ,config={"response_mime_type": "application/json",
                     "response_schema": State})
         if isinstance(new_state, str):  # if error returned  NB this leads to issues

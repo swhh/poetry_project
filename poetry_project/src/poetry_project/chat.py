@@ -64,6 +64,7 @@ def main():
         elif isinstance(new_state, State): # if there is new state
             if new_state != state: # if new state contains new info, update the state
                 state = new_state
+                print('state', state)
              
         if state.poet_name: # if user has selected poet
             if not poet_in_db: # if hasn't been checked if poet in db
@@ -74,7 +75,7 @@ def main():
                     poet_in_db = True
                     state.poet_name = poet_name
 
-            if poet_in_db and state.poet_name: # poet in db and the user has chosen a poem
+            if poet_in_db and state.poem_name: # poet in db and the user has chosen a poem
                 poem_title = find_poem(state.poem_name, poem_titles.to_list())
                 if poem_title: # if poem is in db
                     poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
@@ -82,8 +83,10 @@ def main():
                     read_poem(f"\n{poem_title} by {poet_name}\n" + poem)
                     break
                 else: # if poem is not in db
-                    print("AI: " + llm(chat, f"""Admin: The poet {state.poet_name} is in the database. But the poem {state.poet_name} is not. Ask the user to choose another poem from the poet {state.poet_name}"""))
-            elif poet_in_db and not state.poet_name: # poet in db but user has not chosen poem
+                    print("AI: " + llm(chat, f"""Admin: The poet {state.poet_name} is in the database. 
+                                       But the poem {state.poem_name} is not. 
+                                       Ask the user to choose another poem from the poet {state.poet_name}"""))
+            elif poet_in_db and not state.poem_name: # poet in db but user has not chosen poem
                     print("AI: " + llm(chat, f"""Admin: The poet {poet_name} has been found in the database. 
                             {poet_name} has the following poems in the database: {'\n'.join(poem_titles.to_list())}
                              List the poems for the user and ask the user to choose one of the listed poems."""))

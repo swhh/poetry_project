@@ -61,14 +61,13 @@ def main():
                         Otherwise it should be false."""
                      ,config={"response_mime_type": "application/json",
                     "response_schema": State})
+        
         if isinstance(new_state, str):  # if error returned  NB this leads to issues
             print(f"AI: {new_state}. Please repeat your request")
             continue
         elif isinstance(new_state, State): # if there is new state
             if new_state != state: # if new state contains new info, update the state
                 state = new_state
-
-        print(state)
              
         if state.poet_name: # if user has selected poet
             if not state.poet_in_db: # if hasn't been checked if poet in db

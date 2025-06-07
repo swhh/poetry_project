@@ -75,10 +75,10 @@ def main():
                 if poet_records is not None and len(poet_records):
                     poem_titles = poet_records['Title'].str.strip()
                     poet_name = poet_records['Poet'].iloc[0]
-                    poet_in_db = True
+                    state.poet_in_db = True
                     state.poet_name = poet_name
 
-            if poet_in_db and state.poem_name: # poet in db and the user has chosen a poem
+            if state.poet_in_db and state.poem_name: # poet in db and the user has chosen a poem
                 poem_title = find_poem(state.poem_name, poem_titles.to_list())
                 if poem_title: # if poem is in db
                     poem = poet_records[poet_records['Title'].str.strip() == poem_title].iloc[0]['Poem']
@@ -89,7 +89,7 @@ def main():
                     print("AI: " + llm(chat, f"""Admin: The poet {state.poet_name} is in the database. 
                                        But the poem {state.poem_name} is not. 
                                        Ask the user to choose another poem from the poet {state.poet_name}"""))
-            elif poet_in_db and not state.poem_name: # poet in db but user has not chosen poem
+            elif state.poet_in_db and not state.poem_name: # poet in db but user has not chosen poem
                     print("AI: " + llm(chat, f"""Admin: The poet {poet_name} has been found in the database. 
                             {poet_name} has the following poems in the database: {'\n'.join(poem_titles.to_list())}
                              List the poems for the user and ask the user to choose one of the listed poems."""))

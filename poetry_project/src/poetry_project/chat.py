@@ -22,6 +22,7 @@ Your job is: 1. To help the user select a poet.
 class State(BaseModel):
     poet_name: str = ''
     poem_name: str = ''
+    poet_in_db: bool = False
 
 def llm(chat, prompt, config = None):
     try:
@@ -38,7 +39,6 @@ def llm(chat, prompt, config = None):
 def main():
     state = State()
     df = pd.read_csv('PoetryFoundationData.csv')
-    poet_in_db = False
 
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
@@ -55,18 +55,23 @@ def main():
         new_state = llm(chat, prompt=f"""Admin: Current state: {state}. 
                         Return the updated state based on the conversation history. 
                         Poet_name should be the name of a specific poet. 
-                        And poem_name should be the name of a specific poem by that poet"""
+                        If the user asks for another poet than the one named by poet_name in the current state, update poet_name. 
+                        And poem_name should be the name of a specific poem by that poet
+                        poet_in_db should be true only if the admin has confirmed the poet with name poet_name is in the database. 
+                        Otherwise it should be false."""
                      ,config={"response_mime_type": "application/json",
                     "response_schema": State})
         if isinstance(new_state, str):  # if error returned  NB this leads to issues
-            print(f"AI: {new_state}")
+            print(f"AI: {new_state}. Please repeat your request")
             continue
         elif isinstance(new_state, State): # if there is new state
             if new_state != state: # if new state contains new info, update the state
                 state = new_state
+
+        print(state)
              
         if state.poet_name: # if user has selected poet
-            if not poet_in_db: # if hasn't been checked if poet in db
+            if not state.poet_in_db: # if hasn't been checked if poet in db
                 poet_records = find_poet(df, state.poet_name)
                 if poet_records is not None and len(poet_records):
                     poem_titles = poet_records['Title'].str.strip()

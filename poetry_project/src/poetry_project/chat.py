@@ -64,7 +64,6 @@ def main():
         elif isinstance(new_state, State): # if there is new state
             if new_state != state: # if new state contains new info, update the state
                 state = new_state
-                print('state', state)
              
         if state.poet_name: # if user has selected poet
             if not poet_in_db: # if hasn't been checked if poet in db

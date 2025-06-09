@@ -3,7 +3,7 @@ name = "poetry-project"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "swhh",email = "seamus.holland1@gmail.com"}
+    {name = "swhh",email = ""}
 ]
 readme = "README.md"
 requires-python = ">=3.12,<4.0"

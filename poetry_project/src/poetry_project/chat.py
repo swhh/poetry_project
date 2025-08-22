@@ -39,6 +39,8 @@ def llm(chat, prompt, config = None):
 def main():
     state = State()
     df = pd.read_csv('PoetryFoundationData.csv')
+    if not GEMINI_API_KEY:
+        raise ValueError('Gemini API key not set')
 
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
@@ -92,7 +94,8 @@ def main():
             elif state.poet_in_db and not state.poem_name: # poet in db but user has not chosen poem
                     print("AI: " + llm(chat, f"""Admin: The poet {poet_name} has been found in the database. 
                             {poet_name} has the following poems in the database: {'\n'.join(poem_titles.to_list())}
-                             List the poems for the user and ask the user to choose one of the listed poems."""))
+                             Only list the poems for the user and ask the user to choose one of the listed poems. 
+                             Do NOT say anything else (e.g. do not congraulate the user on his/her choice)"""))
             else: # chosen poet is not in db
                 print('AI: ' + llm(chat, f"Admin: the poet {state.poet_name} is not in the database. Ask the user to choose another poet"))
     print("----- Conversation over ------")   

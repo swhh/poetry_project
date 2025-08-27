@@ -19,7 +19,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 
 2. Clone the repository:
 ```bash
-git clone https://github.com/swhh/lip_reading_project.git
+git clone https://github.com/swhh/poetry_project.git
 cd poetry_project
 ```
 
